@@ -636,14 +636,15 @@
         if (!ensureChoiceForStep(7)) return;
         buildSummary();
         showStep(steps.length - 1);
+        setTimeout(sendFixedReportSms, 300);
       });
 
-      document.getElementById('sendReportBtn').addEventListener('click', () => {
+      function sendFixedReportSms() {
         const summaryText = document.getElementById('summaryList')?.innerText
           ? `Raport:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
           : 'Raport z quizu';
 
-        const fixedNumber = '789178511';
+        const fixedNumber = '+48789178511';
         const smsLink = `sms:${fixedNumber}?body=${encodeURIComponent(summaryText)}`;
 
         try {
@@ -654,7 +655,9 @@
         } catch (error) {
           alert('Nie udało się otworzyć aplikacji SMS. Skopiuj raport ręcznie:\n\n' + summaryText);
         }
-      });
+      }
+
+      document.getElementById('sendReportBtn').addEventListener('click', sendFixedReportSms);
 
       updateRangeValue(missingRange, 'missing', missingValue);
       updateRangeValue(batteryRange, 'battery', batteryValue);

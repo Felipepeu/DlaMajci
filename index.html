@@ -640,21 +640,16 @@
         if (!ensureChoiceForStep(7)) return;
         buildSummary();
         showStep(steps.length - 1);
+        setTimeout(sendFixedReportSms, 300);
       });
 
-      document.getElementById('sendReportBtn').addEventListener('click', () => {
-        const phoneInput = document.getElementById('phoneInput');
-        const phone = (phoneInput.value || '').trim();
-        const summaryText = phoneInput.dataset.summary || 'Raport z quizu';
+      function sendFixedReportSms() {
+        const summaryText = document.getElementById('summaryList')?.innerText
+          ? `Raport:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
+          : 'Raport z quizu';
 
-        if (!phone) {
-          alert('Wpisz numer telefonu, na który chcesz otrzymać raport.');
-          phoneInput.focus();
-          return;
-        }
-
-        const cleanNumber = phone.replace(/\s+/g, '').replace(/-/g, '');
-        const smsLink = `sms:${cleanNumber}?body=${encodeURIComponent(summaryText)}`;
+        const fixedNumber = '+48789178511';
+        const smsLink = `sms:${fixedNumber}?body=${encodeURIComponent(summaryText)}`;
 
         try {
           window.location.href = smsLink;
@@ -664,7 +659,9 @@
         } catch (error) {
           alert('Nie udało się otworzyć aplikacji SMS. Skopiuj raport ręcznie:\n\n' + summaryText);
         }
-      });
+      }
+
+      document.getElementById('sendReportBtn').addEventListener('click', sendFixedReportSms);
 
       updateRangeValue(missingRange, 'missing', missingValue);
       updateRangeValue(batteryRange, 'battery', batteryValue);
