@@ -444,9 +444,7 @@
 
       .summary-item {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 18px;
+        gap: 10px;
         padding: 16px 18px;
         background: rgba(255,255,255,0.78);
         border-radius: 18px;
@@ -458,17 +456,19 @@
       .summary-item span:first-child {
         color: var(--muted);
         font-weight: 700;
+        font-size: 0.86rem;
+        letter-spacing: 0.04em;
+        text-transform: lowercase;
       }
 
       .summary-item strong {
-        text-align: right;
         color: var(--ink);
         font-weight: 800;
         background: rgba(242, 108, 156, 0.08);
-        border-radius: 999px;
-        padding: 8px 12px;
-        max-width: 260px;
+        border-radius: 14px;
+        padding: 10px 12px;
         word-break: break-word;
+        line-height: 1.5;
       }
 
       @media (max-width: 640px) {
