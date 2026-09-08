@@ -657,338 +657,352 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-      const SUPABASE_URL = 'https://cbtkyzejcfrdjvxsmfve.supabase.co';
-      const SUPABASE_ANON_KEY = 'sb_publishable_7Uh9mtALya7Lb8F9V74kaw_FWFas7A2';
-      const REPORT_HISTORY_KEY = 'majci-report-history';
-      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      (() => {
+        const SUPABASE_URL = 'https://cbtkyzejcfrdjvxsmfve.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_7Uh9mtALya7Lb8F9V74kaw_FWFas7A2';
+        const REPORT_HISTORY_KEY = 'majci-report-history';
+        const supabaseClient = window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-      const state = {
-        currentStep: 0,
-        answers: {
-          mood: '',
-          activity: [],
-          missing: 6,
-          smile: '',
-          eat: '',
-          battery: 7,
-          want: ''
-        }
-      };
-
-      const steps = [...document.querySelectorAll('.step')];
-      const missingRange = document.getElementById('missingRange');
-      const batteryRange = document.getElementById('batteryRange');
-      const missingValue = document.getElementById('missingValue');
-      const batteryValue = document.getElementById('batteryValue');
-
-      function showStep(index) {
-        state.currentStep = index;
-        steps.forEach((step, i) => {
-          step.classList.toggle('active', i === index);
-        });
-      }
-
-      function updateRangeValue(range, label, valueElement) {
-        const value = +range.value;
-        valueElement.textContent = `${value}/10`;
-        if (range === missingRange) state.answers.missing = value;
-        if (range === batteryRange) state.answers.battery = value;
-      }
-
-      function attachSingleChoice(groupName, sourceSelector) {
-        document.querySelectorAll(sourceSelector).forEach((button) => {
-          button.addEventListener('click', () => {
-            const btns = [...document.querySelectorAll(sourceSelector)];
-            btns.forEach((btn) => btn.classList.remove('selected'));
-            button.classList.add('selected');
-            state.answers[groupName] = button.dataset.value;
-          });
-        });
-      }
-
-      function attachMultiChoice(groupName, sourceSelector) {
-        document.querySelectorAll(sourceSelector).forEach((button) => {
-          button.addEventListener('click', () => {
-            button.classList.toggle('selected');
-            const selected = [...document.querySelectorAll(`${sourceSelector}.selected`)].map(item => item.dataset.value);
-            state.answers[groupName] = selected;
-          });
-        });
-      }
-
-      attachSingleChoice('mood', '.tile-btn[data-group="mood"]');
-      attachMultiChoice('activity', '.checkbox-btn[data-group="activity"]');
-      attachSingleChoice('smile', '.checkbox-btn[data-group="smile"]');
-      attachSingleChoice('eat', '.checkbox-btn[data-group="eat"]');
-      attachSingleChoice('want', '.checkbox-btn[data-group="want"]');
-
-      missingRange.addEventListener('input', () => updateRangeValue(missingRange, 'missing', missingValue));
-      batteryRange.addEventListener('input', () => updateRangeValue(batteryRange, 'battery', batteryValue));
-
-      function buildSummaryRows() {
-        return [
-          ['co dzis robiłaś', Array.isArray(state.answers.activity) && state.answers.activity.length ? state.answers.activity.join(', ') : '—'],
-          ['level tęsknoty', `${state.answers.missing}/10`],
-          ['powód uśmiechu', state.answers.smile || '—'],
-          ['zjadłaś?', state.answers.eat || '—'],
-          ['czego chcesz ode mnie', state.answers.want || '—'],
-          ['poziom baterii spolecznej', `${state.answers.battery}/10`]
-        ];
-      }
-
-      function buildSummary() {
-        const summaryList = document.getElementById('summaryList');
-        const rows = buildSummaryRows();
-
-        summaryList.innerHTML = rows.map(([label, value]) => `
-          <div class="summary-item">
-            <span>${label}</span>
-            <strong>${value}</strong>
-          </div>
-        `).join('');
-      }
-
-      function ensureChoiceForStep(index) {
-        if (index === 1 && !state.answers.mood) {
-          alert('Wybierz jedną opcję, zanim przejdziesz dalej.');
-          return false;
-        }
-        if (index === 2 && state.answers.activity.length === 0) {
-          alert('Zaznacz przynajmniej jedną opcję.');
-          return false;
-        }
-        if (index === 4 && !state.answers.smile) {
-          alert('Wybierz powód uśmiechu.');
-          return false;
-        }
-        if (index === 5 && !state.answers.eat) {
-          alert('Wybierz odpowiedź.');
-          return false;
-        }
-        if (index === 7 && !state.answers.want) {
-          alert('Wybierz, czego chcesz dziś ode mnie.');
-          return false;
-        }
-        return true;
-      }
-
-      document.querySelectorAll('[data-action="next"]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const currentIndex = steps.indexOf(document.querySelector('.step.active'));
-          if (!ensureChoiceForStep(currentIndex)) return;
-          const nextIndex = Math.min(currentIndex + 1, steps.length - 1);
-          showStep(nextIndex);
-          if (nextIndex === steps.length - 1) buildSummary();
-        });
-      });
-
-      document.querySelectorAll('[data-action="back"]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const currentIndex = steps.indexOf(document.querySelector('.step.active'));
-          const prevIndex = Math.max(currentIndex - 1, 0);
-          showStep(prevIndex);
-        });
-      });
-
-      document.querySelector('.yes-btn').addEventListener('click', () => {
-        showStep(1);
-      });
-
-      const noBtn = document.getElementById('noBtn');
-      const introBox = document.querySelector('.intro-box');
-
-      function moveNoAway() {
-        const boxRect = introBox.getBoundingClientRect();
-        const noRect = noBtn.getBoundingClientRect();
-        const padding = 18;
-        const maxLeft = Math.max(padding, boxRect.width - noRect.width - padding);
-        const maxTop = Math.max(padding, boxRect.height - noRect.height - padding);
-        const left = Math.random() * maxLeft;
-        const top = Math.random() * maxTop;
-        noBtn.style.left = `${left}px`;
-        noBtn.style.top = `${top}px`;
-        noBtn.style.transform = 'translate(0, 0)';
-      }
-
-      noBtn.addEventListener('mouseenter', moveNoAway);
-      noBtn.addEventListener('mousemove', moveNoAway);
-      noBtn.addEventListener('focus', moveNoAway);
-
-      document.querySelector('[data-action="finish"]').addEventListener('click', async () => {
-        if (!ensureChoiceForStep(7)) return;
-        buildSummary();
-
-        steps.forEach((step) => step.classList.remove('active'));
-        const summaryStep = document.getElementById('step-summary');
-        if (summaryStep) summaryStep.classList.add('active');
-
-        await saveReport(buildSummaryRows());
-        await renderHistory();
-        document.getElementById('historyOverlay').classList.add('active');
-      });
-
-      function normalizeLegacyReport(value) {
-        if (Array.isArray(value)) return value;
-        const lines = String(value || '').split(/\n/).map((line) => line.trim()).filter(Boolean);
-
-        if (!lines.length) return [];
-
-        return lines.map((line) => {
-          const splitIndex = line.indexOf(':');
-          if (splitIndex === -1) {
-            return ['raport', line];
+        const state = {
+          currentStep: 0,
+          answers: {
+            mood: '',
+            activity: [],
+            missing: 6,
+            smile: '',
+            eat: '',
+            battery: 7,
+            want: ''
           }
-          return [line.slice(0, splitIndex).trim(), line.slice(splitIndex + 1).trim()];
+        };
+
+        const steps = [...document.querySelectorAll('.step')];
+        const missingRange = document.getElementById('missingRange');
+        const batteryRange = document.getElementById('batteryRange');
+        const missingValue = document.getElementById('missingValue');
+        const batteryValue = document.getElementById('batteryValue');
+
+        function showStep(index) {
+          state.currentStep = index;
+          steps.forEach((step, i) => {
+            step.classList.toggle('active', i === index);
+          });
+        }
+
+        function updateRangeValue(range, label, valueElement) {
+          const value = +range.value;
+          valueElement.textContent = `${value}/10`;
+          if (range === missingRange) state.answers.missing = value;
+          if (range === batteryRange) state.answers.battery = value;
+        }
+
+        function attachSingleChoice(groupName, sourceSelector) {
+          document.querySelectorAll(sourceSelector).forEach((button) => {
+            button.addEventListener('click', () => {
+              const btns = [...document.querySelectorAll(sourceSelector)];
+              btns.forEach((btn) => btn.classList.remove('selected'));
+              button.classList.add('selected');
+              state.answers[groupName] = button.dataset.value;
+            });
+          });
+        }
+
+        function attachMultiChoice(groupName, sourceSelector) {
+          document.querySelectorAll(sourceSelector).forEach((button) => {
+            button.addEventListener('click', () => {
+              button.classList.toggle('selected');
+              const selected = [...document.querySelectorAll(`${sourceSelector}.selected`)].map(item => item.dataset.value);
+              state.answers[groupName] = selected;
+            });
+          });
+        }
+
+        attachSingleChoice('mood', '.tile-btn[data-group="mood"]');
+        attachMultiChoice('activity', '.checkbox-btn[data-group="activity"]');
+        attachSingleChoice('smile', '.checkbox-btn[data-group="smile"]');
+        attachSingleChoice('eat', '.checkbox-btn[data-group="eat"]');
+        attachSingleChoice('want', '.checkbox-btn[data-group="want"]');
+
+        missingRange.addEventListener('input', () => updateRangeValue(missingRange, 'missing', missingValue));
+        batteryRange.addEventListener('input', () => updateRangeValue(batteryRange, 'battery', batteryValue));
+
+        function buildSummaryRows() {
+          return [
+            ['co dzis robiłaś', Array.isArray(state.answers.activity) && state.answers.activity.length ? state.answers.activity.join(', ') : '—'],
+            ['level tęsknoty', `${state.answers.missing}/10`],
+            ['powód uśmiechu', state.answers.smile || '—'],
+            ['zjadłaś?', state.answers.eat || '—'],
+            ['czego chcesz ode mnie', state.answers.want || '—'],
+            ['poziom baterii spolecznej', `${state.answers.battery}/10`]
+          ];
+        }
+
+        function buildSummary() {
+          const summaryList = document.getElementById('summaryList');
+          const rows = buildSummaryRows();
+
+          summaryList.innerHTML = rows.map(([label, value]) => `
+            <div class="summary-item">
+              <span>${label}</span>
+              <strong>${value}</strong>
+            </div>
+          `).join('');
+        }
+
+        function ensureChoiceForStep(index) {
+          if (index === 1 && !state.answers.mood) {
+            alert('Wybierz jedną opcję, zanim przejdziesz dalej.');
+            return false;
+          }
+          if (index === 2 && state.answers.activity.length === 0) {
+            alert('Zaznacz przynajmniej jedną opcję.');
+            return false;
+          }
+          if (index === 4 && !state.answers.smile) {
+            alert('Wybierz powód uśmiechu.');
+            return false;
+          }
+          if (index === 5 && !state.answers.eat) {
+            alert('Wybierz odpowiedź.');
+            return false;
+          }
+          if (index === 7 && !state.answers.want) {
+            alert('Wybierz, czego chcesz dziś ode mnie.');
+            return false;
+          }
+          return true;
+        }
+
+        document.querySelectorAll('[data-action="next"]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const currentIndex = steps.indexOf(document.querySelector('.step.active'));
+            if (!ensureChoiceForStep(currentIndex)) return;
+            const nextIndex = Math.min(currentIndex + 1, steps.length - 1);
+            showStep(nextIndex);
+            if (nextIndex === steps.length - 1) buildSummary();
+          });
         });
-      }
 
-      async function saveReport(reportData) {
-        const rows = normalizeLegacyReport(reportData);
-        const text = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
+        document.querySelectorAll('[data-action="back"]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const currentIndex = steps.indexOf(document.querySelector('.step.active'));
+            const prevIndex = Math.max(currentIndex - 1, 0);
+            showStep(prevIndex);
+          });
+        });
 
-        try {
-          const { error } = await supabase.from('reports').insert([
-            {
-              rows: Object.fromEntries(rows),
-              text,
-              created_at: new Date().toISOString()
+        document.querySelector('.yes-btn').addEventListener('click', () => {
+          showStep(1);
+        });
+
+        const noBtn = document.getElementById('noBtn');
+        const introBox = document.querySelector('.intro-box');
+
+        function moveNoAway() {
+          const boxRect = introBox.getBoundingClientRect();
+          const noRect = noBtn.getBoundingClientRect();
+          const padding = 18;
+          const maxLeft = Math.max(padding, boxRect.width - noRect.width - padding);
+          const maxTop = Math.max(padding, boxRect.height - noRect.height - padding);
+          const left = Math.random() * maxLeft;
+          const top = Math.random() * maxTop;
+          noBtn.style.left = `${left}px`;
+          noBtn.style.top = `${top}px`;
+          noBtn.style.transform = 'translate(0, 0)';
+        }
+
+        noBtn.addEventListener('mouseenter', moveNoAway);
+        noBtn.addEventListener('mousemove', moveNoAway);
+        noBtn.addEventListener('focus', moveNoAway);
+
+        document.querySelector('[data-action="finish"]').addEventListener('click', async () => {
+          if (!ensureChoiceForStep(7)) return;
+          buildSummary();
+
+          steps.forEach((step) => step.classList.remove('active'));
+          const summaryStep = document.getElementById('step-summary');
+          if (summaryStep) summaryStep.classList.add('active');
+
+          await saveReport(buildSummaryRows());
+          await renderHistory();
+          document.getElementById('historyOverlay').classList.add('active');
+        });
+
+        function normalizeLegacyReport(value) {
+          if (Array.isArray(value)) return value;
+          const lines = String(value || '').split(/\n/).map((line) => line.trim()).filter(Boolean);
+
+          if (!lines.length) return [];
+
+          return lines.map((line) => {
+            const splitIndex = line.indexOf(':');
+            if (splitIndex === -1) {
+              return ['raport', line];
             }
-          ]);
-
-          if (error) {
-            throw error;
-          }
-
-          const existing = loadReports();
-          const entry = {
-            id: Date.now() + Math.random(),
-            createdAt: new Date().toISOString(),
-            rows,
-            text
-          };
-
-          const next = [entry, ...existing].slice(0, 50);
-          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
-          return;
-        } catch (error) {
-          const existing = loadReports();
-          const entry = {
-            id: Date.now() + Math.random(),
-            createdAt: new Date().toISOString(),
-            rows,
-            text
-          };
-
-          const next = [entry, ...existing].slice(0, 50);
-          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
+            return [line.slice(0, splitIndex).trim(), line.slice(splitIndex + 1).trim()];
+          });
         }
-      }
 
-      function loadReports() {
-        try {
-          const saved = localStorage.getItem(REPORT_HISTORY_KEY);
-          return saved ? JSON.parse(saved) : [];
-        } catch (error) {
-          return [];
-        }
-      }
+        async function saveReport(reportData) {
+          const rows = normalizeLegacyReport(reportData);
+          const text = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
 
-      async function loadReportsFromSupabase() {
-        try {
-          const { data, error } = await supabase
-            .from('reports')
-            .select('*')
-            .order('created_at', { ascending: false });
+          try {
+            if (!supabaseClient) {
+              throw new Error('Supabase client is not available');
+            }
 
-          if (error) {
-            throw error;
+            const { error } = await supabaseClient.from('reports').insert([
+              {
+                rows: Object.fromEntries(rows),
+                text,
+                created_at: new Date().toISOString()
+              }
+            ]);
+
+            if (error) {
+              throw error;
+            }
+
+            const existing = loadReports();
+            const entry = {
+              id: Date.now() + Math.random(),
+              createdAt: new Date().toISOString(),
+              rows,
+              text
+            };
+
+            const next = [entry, ...existing].slice(0, 50);
+            localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
+            return;
+          } catch (error) {
+            const existing = loadReports();
+            const entry = {
+              id: Date.now() + Math.random(),
+              createdAt: new Date().toISOString(),
+              rows,
+              text
+            };
+
+            const next = [entry, ...existing].slice(0, 50);
+            localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
           }
+        }
 
-          if (!Array.isArray(data) || !data.length) {
+        function loadReports() {
+          try {
+            const saved = localStorage.getItem(REPORT_HISTORY_KEY);
+            return saved ? JSON.parse(saved) : [];
+          } catch (error) {
+            return [];
+          }
+        }
+
+        async function loadReportsFromSupabase() {
+          try {
+            if (!supabaseClient) {
+              return loadReports();
+            }
+
+            const { data, error } = await supabaseClient
+              .from('reports')
+              .select('*')
+              .order('created_at', { ascending: false });
+
+            if (error) {
+              throw error;
+            }
+
+            if (!Array.isArray(data) || !data.length) {
+              return loadReports();
+            }
+
+            return data.map((report) => ({
+              id: report.id,
+              createdAt: report.created_at,
+              rows: report.rows ? Object.entries(report.rows) : normalizeLegacyReport(report.text),
+              text: report.text || ''
+            }));
+          } catch (error) {
             return loadReports();
           }
-
-          return data.map((report) => ({
-            id: report.id,
-            createdAt: report.created_at,
-            rows: report.rows ? Object.entries(report.rows) : normalizeLegacyReport(report.text),
-            text: report.text || ''
-          }));
-        } catch (error) {
-          return loadReports();
-        }
-      }
-
-      async function renderHistory() {
-        const historyList = document.getElementById('historyList');
-        const reports = await loadReportsFromSupabase();
-
-        if (!reports.length) {
-          historyList.innerHTML = '<div class="history-empty">Brak zapisanych raportow.</div>';
-          return;
         }
 
-        historyList.innerHTML = reports.map((report) => {
-          const rows = Array.isArray(report.rows) && report.rows.length ? report.rows : normalizeLegacyReport(report.text);
+        async function renderHistory() {
+          const historyList = document.getElementById('historyList');
+          const reports = await loadReportsFromSupabase();
 
-          return `
-            <div class="history-item">
-              <div class="history-item-top">
-                <div class="history-meta">
-                  <span class="history-badge">raport</span>
-                  <span class="history-date">${new Date(report.createdAt).toLocaleString('pl-PL')}</span>
-                </div>
-                <button class="history-delete" data-delete-id="${report.id}" type="button">usuń</button>
-              </div>
-              <div class="history-report">
-                ${rows.map(([label, value]) => `
-                  <div class="history-report-row">
-                    <span>${label}</span>
-                    <strong>${value}</strong>
+          if (!reports.length) {
+            historyList.innerHTML = '<div class="history-empty">Brak zapisanych raportow.</div>';
+            return;
+          }
+
+          historyList.innerHTML = reports.map((report) => {
+            const rows = Array.isArray(report.rows) && report.rows.length ? report.rows : normalizeLegacyReport(report.text);
+
+            return `
+              <div class="history-item">
+                <div class="history-item-top">
+                  <div class="history-meta">
+                    <span class="history-badge">raport</span>
+                    <span class="history-date">${new Date(report.createdAt).toLocaleString('pl-PL')}</span>
                   </div>
-                `).join('')}
+                  <button class="history-delete" data-delete-id="${report.id}" type="button">usuń</button>
+                </div>
+                <div class="history-report">
+                  ${rows.map(([label, value]) => `
+                    <div class="history-report-row">
+                      <span>${label}</span>
+                      <strong>${value}</strong>
+                    </div>
+                  `).join('')}
+                </div>
               </div>
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
 
-        historyList.querySelectorAll('[data-delete-id]').forEach((button) => {
-          button.addEventListener('click', async () => {
-            const id = button.dataset.deleteId;
-            try {
-              const { error } = await supabase.from('reports').delete().eq('id', id);
-              if (!error) {
-                await renderHistory();
-                return;
+          historyList.querySelectorAll('[data-delete-id]').forEach((button) => {
+            button.addEventListener('click', async () => {
+              const id = button.dataset.deleteId;
+              try {
+                if (!supabaseClient) {
+                  throw new Error('Supabase client is not available');
+                }
+
+                const { error } = await supabaseClient.from('reports').delete().eq('id', id);
+                if (!error) {
+                  await renderHistory();
+                  return;
+                }
+              } catch (error) {
+                // fallback to local storage
               }
-            } catch (error) {
-              // fallback to local storage
-            }
 
-            const next = loadReports().filter((report) => String(report.id) !== String(id));
-            localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
-            renderHistory();
+              const next = loadReports().filter((report) => String(report.id) !== String(id));
+              localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
+              renderHistory();
+            });
           });
-        });
-      }
-
-      document.getElementById('historyBtn').addEventListener('click', async () => {
-        await renderHistory();
-        document.getElementById('historyOverlay').classList.add('active');
-      });
-
-      document.getElementById('historyClose').addEventListener('click', () => {
-        document.getElementById('historyOverlay').classList.remove('active');
-      });
-
-      document.getElementById('historyOverlay').addEventListener('click', (event) => {
-        if (event.target === event.currentTarget) {
-          event.currentTarget.classList.remove('active');
         }
-      });
 
-      updateRangeValue(missingRange, 'missing', missingValue);
-      updateRangeValue(batteryRange, 'battery', batteryValue);
+        document.getElementById('historyBtn').addEventListener('click', async () => {
+          await renderHistory();
+          document.getElementById('historyOverlay').classList.add('active');
+        });
+
+        document.getElementById('historyClose').addEventListener('click', () => {
+          document.getElementById('historyOverlay').classList.remove('active');
+        });
+
+        document.getElementById('historyOverlay').addEventListener('click', (event) => {
+          if (event.target === event.currentTarget) {
+            event.currentTarget.classList.remove('active');
+          }
+        });
+
+        updateRangeValue(missingRange, 'missing', missingValue);
+        updateRangeValue(batteryRange, 'battery', batteryValue);
+      })();
     </script>
   </body>
 </html>

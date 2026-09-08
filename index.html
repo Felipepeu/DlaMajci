@@ -660,7 +660,7 @@
       const SUPABASE_URL = 'https://cbtkyzejcfrdjvxsmfve.supabase.co';
       const SUPABASE_ANON_KEY = 'sb_publishable_7Uh9mtALya7Lb8F9V74kaw_FWFas7A2';
       const REPORT_HISTORY_KEY = 'majci-report-history';
-      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const supabaseClient = window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
       const state = {
         currentStep: 0,
@@ -847,7 +847,11 @@
         const text = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
 
         try {
-          const { error } = await supabase.from('reports').insert([
+          if (!supabaseClient) {
+            throw new Error('Supabase client is not available');
+          }
+
+          const { error } = await supabaseClient.from('reports').insert([
             {
               rows: Object.fromEntries(rows),
               text,
@@ -895,7 +899,11 @@
 
       async function loadReportsFromSupabase() {
         try {
-          const { data, error } = await supabase
+          if (!supabaseClient) {
+            return loadReports();
+          }
+
+          const { data, error } = await supabaseClient
             .from('reports')
             .select('*')
             .order('created_at', { ascending: false });
@@ -956,7 +964,11 @@
           button.addEventListener('click', async () => {
             const id = button.dataset.deleteId;
             try {
-              const { error } = await supabase.from('reports').delete().eq('id', id);
+              if (!supabaseClient) {
+                throw new Error('Supabase client is not available');
+              }
+
+              const { error } = await supabaseClient.from('reports').delete().eq('id', id);
               if (!error) {
                 await renderHistory();
                 return;
