@@ -720,7 +720,11 @@
       document.querySelector('[data-action="finish"]').addEventListener('click', () => {
         if (!ensureChoiceForStep(7)) return;
         buildSummary();
-        showStep(steps.length - 1);
+
+        steps.forEach((step) => step.classList.remove('active'));
+        const summaryStep = document.getElementById('step-summary');
+        if (summaryStep) summaryStep.classList.add('active');
+
         const summaryText = document.getElementById('summaryList')?.innerText
           ? `Raport z quizu dla Majci:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
           : 'Raport z quizu dla Majci';
