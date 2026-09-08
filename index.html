@@ -474,6 +474,34 @@
         line-height: 1.5;
       }
 
+      .history-report {
+        display: grid;
+        gap: 10px;
+      }
+
+      .history-report-row {
+        display: grid;
+        gap: 6px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.62);
+        border: 1px solid rgba(242, 108, 156, 0.08);
+      }
+
+      .history-report-row span {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .history-report-row strong {
+        color: var(--ink);
+        font-weight: 800;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
       @media (max-width: 640px) {
         .step { padding: 30px 18px 22px; }
         .tile-grid, .multi-grid { grid-template-columns: 1fr; }
@@ -693,9 +721,8 @@
       missingRange.addEventListener('input', () => updateRangeValue(missingRange, 'missing', missingValue));
       batteryRange.addEventListener('input', () => updateRangeValue(batteryRange, 'battery', batteryValue));
 
-      function buildSummary() {
-        const summaryList = document.getElementById('summaryList');
-        const rows = [
+      function buildSummaryRows() {
+        return [
           ['co dzis robiłaś', Array.isArray(state.answers.activity) && state.answers.activity.length ? state.answers.activity.join(', ') : '—'],
           ['level tęsknoty', `${state.answers.missing}/10`],
           ['powód uśmiechu', state.answers.smile || '—'],
@@ -703,6 +730,11 @@
           ['czego chcesz ode mnie', state.answers.want || '—'],
           ['poziom baterii spolecznej', `${state.answers.battery}/10`]
         ];
+      }
+
+      function buildSummary() {
+        const summaryList = document.getElementById('summaryList');
+        const rows = buildSummaryRows();
 
         summaryList.innerHTML = rows.map(([label, value]) => `
           <div class="summary-item">
@@ -710,9 +742,6 @@
             <strong>${value}</strong>
           </div>
         `).join('');
-
-        const summaryText = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
-        // summary text is stored in report history only
       }
 
       function ensureChoiceForStep(index) {
@@ -789,18 +818,33 @@
         const summaryStep = document.getElementById('step-summary');
         if (summaryStep) summaryStep.classList.add('active');
 
-        const summaryText = document.getElementById('summaryList')?.innerText
-          ? `Raport z quizu dla Majci:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
-          : 'Raport z quizu dla Majci';
-        saveReport(summaryText);
+        saveReport(buildSummaryRows());
       });
 
-      function saveReport(reportText) {
+      function normalizeLegacyReport(value) {
+        if (Array.isArray(value)) return value;
+        const lines = String(value || '').split(/\n/).map((line) => line.trim()).filter(Boolean);
+
+        if (!lines.length) return [];
+
+        return lines.map((line) => {
+          const splitIndex = line.indexOf(':');
+          if (splitIndex === -1) {
+            return ['raport', line];
+          }
+          return [line.slice(0, splitIndex).trim(), line.slice(splitIndex + 1).trim()];
+        });
+      }
+
+      function saveReport(reportData) {
+        const rows = normalizeLegacyReport(reportData);
+        const text = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
         const existing = loadReports();
         const entry = {
           id: Date.now() + Math.random(),
           createdAt: new Date().toISOString(),
-          text: reportText
+          rows,
+          text
         };
 
         const next = [entry, ...existing].slice(0, 50);
@@ -825,18 +869,29 @@
           return;
         }
 
-        historyList.innerHTML = reports.map((report) => `
-          <div class="history-item">
-            <div class="history-item-top">
-              <div class="history-meta">
-                <span class="history-badge">raport</span>
-                <span class="history-date">${new Date(report.createdAt).toLocaleString('pl-PL')}</span>
+        historyList.innerHTML = reports.map((report) => {
+          const rows = Array.isArray(report.rows) && report.rows.length ? report.rows : normalizeLegacyReport(report.text);
+
+          return `
+            <div class="history-item">
+              <div class="history-item-top">
+                <div class="history-meta">
+                  <span class="history-badge">raport</span>
+                  <span class="history-date">${new Date(report.createdAt).toLocaleString('pl-PL')}</span>
+                </div>
+                <button class="history-delete" data-delete-id="${report.id}" type="button">usuń</button>
               </div>
-              <button class="history-delete" data-delete-id="${report.id}" type="button">usuń</button>
+              <div class="history-report">
+                ${rows.map(([label, value]) => `
+                  <div class="history-report-row">
+                    <span>${label}</span>
+                    <strong>${value}</strong>
+                  </div>
+                `).join('')}
+              </div>
             </div>
-            <p>${report.text.replace(/\n/g, '<br>')}</p>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
         historyList.querySelectorAll('[data-delete-id]').forEach((button) => {
           button.addEventListener('click', () => {
