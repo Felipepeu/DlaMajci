@@ -271,47 +271,122 @@
         font-size: clamp(2rem, 4vw, 2.7rem);
       }
 
-      .phone-box {
-        display: grid;
-        gap: 10px;
-        margin-top: 20px;
-        padding-top: 16px;
-        border-top: 1px solid rgba(242, 108, 156, 0.15);
-      }
-
-      .phone-box label {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--muted);
-      }
-
-      .phone-box input {
-        width: 100%;
-        padding: 14px 16px;
-        border: 1px solid rgba(220, 84, 136, 0.2);
-        border-radius: 14px;
-        background: rgba(255,255,255,0.7);
-        color: var(--ink);
-        font: inherit;
-      }
-
-      .phone-actions {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-
-      .send-btn {
-        display: none;
-        min-width: 180px;
-        padding: 14px 20px;
+      .history-btn {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 30;
         border: none;
         border-radius: 999px;
         background: linear-gradient(135deg, #f478a5, #e85d93);
         color: white;
+        font: inherit;
+        font-weight: 700;
+        padding: 12px 18px;
+        box-shadow: 0 12px 26px rgba(233, 90, 143, 0.22);
+        cursor: pointer;
+      }
+
+      .history-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(41, 18, 30, 0.38);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 40;
+      }
+
+      .history-overlay.active {
+        display: flex;
+      }
+
+      .history-panel {
+        width: min(740px, 100%);
+        max-height: 78vh;
+        overflow: auto;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid rgba(242, 108, 156, 0.2);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 24px 18px 18px;
+      }
+
+      .history-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .history-header h3 {
+        margin: 0;
+        font-size: clamp(1.5rem, 3vw, 2.1rem);
+      }
+
+      .history-close {
+        border: none;
+        background: rgba(242, 108, 156, 0.12);
+        color: var(--ink);
+        border-radius: 999px;
+        width: 42px;
+        height: 42px;
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
+
+      .history-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .history-item {
+        background: rgba(255,255,255,0.72);
+        border: 1px solid rgba(242, 108, 156, 0.12);
+        border-radius: 16px;
+        padding: 14px 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .history-item-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .history-date {
+        font-size: 0.8rem;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .history-item p {
+        margin: 0;
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
+
+      .history-delete {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(220, 84, 136, 0.12);
+        color: var(--ink);
         font-weight: 700;
         cursor: pointer;
+      }
+
+      .history-empty {
+        padding: 18px;
+        text-align: center;
+        color: var(--muted);
+        background: rgba(255,255,255,0.7);
+        border: 1px dashed rgba(242, 108, 156, 0.2);
+        border-radius: 16px;
       }
 
       .summary-list {
@@ -349,6 +424,18 @@
     </style>
   </head>
   <body>
+    <button class="history-btn" id="historyBtn" type="button">historia raportow</button>
+
+    <div class="history-overlay" id="historyOverlay" aria-label="Historia raportow">
+      <div class="history-panel">
+        <div class="history-header">
+          <h3>historia raportow</h3>
+          <button class="history-close" id="historyClose" type="button" aria-label="Zamknij historię">×</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+
     <div class="app">
       <section class="step active" id="step-intro">
         <h1 class="question">tęskniłaś za mną?</h1>
@@ -472,19 +559,13 @@
         <div class="summary">
           <h3>raport</h3>
           <div class="summary-list" id="summaryList"></div>
-
-          <div class="phone-box">
-            <label for="phoneInput">prześlij raport na numer telefonu</label>
-            <input id="phoneInput" type="tel" placeholder="+48 123 456 789" inputmode="tel" />
-            <div class="phone-actions">
-              <button class="send-btn" id="sendReportBtn" type="button">wyślij raport</button>
-            </div>
-          </div>
         </div>
       </section>
     </div>
 
     <script>
+      const REPORT_HISTORY_KEY = 'majci-report-history';
+
       const state = {
         currentStep: 0,
         answers: {
@@ -641,28 +722,76 @@
         if (!ensureChoiceForStep(7)) return;
         buildSummary();
         showStep(steps.length - 1);
-        setTimeout(sendReportToWhatsApp, 300);
-      });
-
-      function sendReportToWhatsApp() {
         const summaryText = document.getElementById('summaryList')?.innerText
           ? `Raport z quizu dla Majci:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
           : 'Raport z quizu dla Majci';
+        saveReport(summaryText);
+      });
 
-        const phoneNumber = '48789178511';
-        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(summaryText)}`;
+      function saveReport(reportText) {
+        const existing = loadReports();
+        const entry = {
+          id: Date.now() + Math.random(),
+          createdAt: new Date().toISOString(),
+          text: reportText
+        };
 
+        const next = [entry, ...existing].slice(0, 50);
+        localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
+      }
+
+      function loadReports() {
         try {
-          window.open(whatsappUrl, '_blank');
-          setTimeout(() => {
-            alert('Otworzyło się WhatsApp z gotową wiadomością. Wystarczy ją wysłać.');
-          }, 250);
+          const saved = localStorage.getItem(REPORT_HISTORY_KEY);
+          return saved ? JSON.parse(saved) : [];
         } catch (error) {
-          alert('Nie udało się otworzyć WhatsApp. Skopiuj raport ręcznie:\n\n' + summaryText);
+          return [];
         }
       }
 
-      document.getElementById('sendReportBtn').addEventListener('click', sendReportToWhatsApp);
+      function renderHistory() {
+        const historyList = document.getElementById('historyList');
+        const reports = loadReports();
+
+        if (!reports.length) {
+          historyList.innerHTML = '<div class="history-empty">Brak zapisanych raportow.</div>';
+          return;
+        }
+
+        historyList.innerHTML = reports.map((report) => `
+          <div class="history-item">
+            <div class="history-item-top">
+              <span class="history-date">${new Date(report.createdAt).toLocaleString('pl-PL')}</span>
+              <button class="history-delete" data-delete-id="${report.id}" type="button">usuń</button>
+            </div>
+            <p>${report.text.replace(/\n/g, '<br>')}</p>
+          </div>
+        `).join('');
+
+        historyList.querySelectorAll('[data-delete-id]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const id = button.dataset.deleteId;
+            const next = loadReports().filter((report) => String(report.id) !== String(id));
+            localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
+            renderHistory();
+          });
+        });
+      }
+
+      document.getElementById('historyBtn').addEventListener('click', () => {
+        renderHistory();
+        document.getElementById('historyOverlay').classList.add('active');
+      });
+
+      document.getElementById('historyClose').addEventListener('click', () => {
+        document.getElementById('historyOverlay').classList.remove('active');
+      });
+
+      document.getElementById('historyOverlay').addEventListener('click', (event) => {
+        if (event.target === event.currentTarget) {
+          event.currentTarget.classList.remove('active');
+        }
+      });
 
       updateRangeValue(missingRange, 'missing', missingValue);
       updateRangeValue(batteryRange, 'battery', batteryValue);
