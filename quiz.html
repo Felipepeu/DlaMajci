@@ -637,39 +637,28 @@
         if (!ensureChoiceForStep(7)) return;
         buildSummary();
         showStep(steps.length - 1);
-        setTimeout(sendReportToDiscord, 300);
+        setTimeout(sendReportToWhatsApp, 300);
       });
 
-      const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1546904915480285205/XNquAXOEorTzG3yp0P2dlV6JeO0aq75tJh5VkYc16dk9Qi29ZKaxhx1CFLDlUInj8KCP';
-
-      function sendReportToDiscord() {
+      function sendReportToWhatsApp() {
         const summaryText = document.getElementById('summaryList')?.innerText
           ? `Raport z quizu dla Majci:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
           : 'Raport z quizu dla Majci';
 
-        fetch(DISCORD_WEBHOOK_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            content: summaryText
-          })
-        })
-          .then(async (response) => {
-            if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(errorText || 'Błąd wysyłki do Discorda');
-            }
-            alert('Raport został wysłany na Discord!');
-          })
-          .catch((error) => {
-            console.error(error);
-            alert('Nie udało się wysłać raportu do Discorda. Sprawdź webhook i połączenie internetowe.');
-          });
+        const phoneNumber = '48789178511';
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(summaryText)}`;
+
+        try {
+          window.open(whatsappUrl, '_blank');
+          setTimeout(() => {
+            alert('Otworzyło się WhatsApp z gotową wiadomością. Wystarczy ją wysłać.');
+          }, 250);
+        } catch (error) {
+          alert('Nie udało się otworzyć WhatsApp. Skopiuj raport ręcznie:\n\n' + summaryText);
+        }
       }
 
-      document.getElementById('sendReportBtn').addEventListener('click', sendReportToDiscord);
+      document.getElementById('sendReportBtn').addEventListener('click', sendReportToWhatsApp);
 
       updateRangeValue(missingRange, 'missing', missingValue);
       updateRangeValue(batteryRange, 'battery', batteryValue);
