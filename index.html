@@ -819,6 +819,8 @@
         if (summaryStep) summaryStep.classList.add('active');
 
         saveReport(buildSummaryRows());
+        renderHistory();
+        document.getElementById('historyOverlay').classList.add('active');
       });
 
       function normalizeLegacyReport(value) {
