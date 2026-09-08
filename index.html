@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz dla Majci</title>
+    <style>
+      :root {
+        --bg1: #fff9fc;
+        --bg2: #ffe7f1;
+        --card: rgba(255, 255, 255, 0.75);
+        --card-strong: rgba(255, 255, 255, 0.9);
+        --ink: #3d2436;
+        --muted: #7d5570;
+        --rose: #f26c9c;
+        --rose-deep: #d94c80;
+        --rose-soft: #ffc9dc;
+        --lavender: #c9b5ff;
+        --panel: rgba(255, 255, 255, 0.68);
+        --shadow: 0 22px 60px rgba(149, 50, 91, 0.18);
+        --good: #ffe0b2;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at top, rgba(255, 190, 214, 0.95), transparent 28%),
+                    linear-gradient(135deg, var(--bg1), var(--bg2));
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 24px;
+      }
+
+      .app {
+        width: min(900px, 100%);
+        background: var(--card);
+        border: 1px solid rgba(242, 108, 156, 0.18);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+      }
+
+      .step {
+        display: none;
+        padding: 40px 28px 28px;
+      }
+
+      .step.active {
+        display: block;
+        animation: fadeUp 0.45s ease;
+      }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .question {
+        margin: 0 0 26px;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 1.15;
+        letter-spacing: -0.05em;
+        text-align: center;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: var(--muted);
+        margin: -8px 0 26px;
+        font-size: 1rem;
+      }
+
+      .choice-row {
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin-top: 24px;
+      }
+
+      .option-btn, .tile-btn, .range-wrap button, .nav-btn {
+        font: inherit;
+      }
+
+      .option-btn {
+        min-width: 130px;
+        padding: 18px 28px;
+        border-radius: 999px;
+        border: 2px solid rgba(220, 84, 136, 0.2);
+        background: linear-gradient(135deg, #ffffff, #fff1f7);
+        color: var(--ink);
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+
+      .option-btn:hover, .tile-btn:hover, .nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(186, 58, 104, 0.12);
+      }
+
+      .option-btn.selected, .tile-btn.selected {
+        background: linear-gradient(135deg, #f478a5, #e85d93);
+        border-color: transparent;
+        color: white;
+        box-shadow: 0 18px 30px rgba(233, 90, 143, 0.22);
+      }
+
+      .intro-box {
+        position: relative;
+        width: min(520px, 100%);
+        height: 240px;
+        margin: 0 auto 18px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.54), rgba(255,228,238,0.82));
+        border: 1px solid rgba(242, 108, 156, 0.2);
+        border-radius: 26px;
+      }
+
+      .intro-box .no-btn,
+      .intro-box .yes-btn {
+        position: absolute;
+        top: 68%;
+        transform: translateY(-50%);
+        min-width: 120px;
+        padding: 16px 28px;
+        border-radius: 999px;
+        border: 2px solid rgba(220, 84, 136, 0.18);
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.14s ease, left 0.2s ease, top 0.2s ease;
+      }
+
+      .intro-box .yes-btn {
+        left: 36%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #f478a5, #e85d93);
+        color: white;
+        box-shadow: 0 15px 28px rgba(233, 90, 143, 0.2);
+      }
+
+      .intro-box .no-btn {
+        left: 64%;
+        transform: translate(-50%, -50%);
+        background: white;
+        color: var(--ink);
+      }
+
+      .tile-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(140px, 1fr));
+        gap: 16px;
+        max-width: 620px;
+        margin: 0 auto;
+      }
+
+      .tile-btn {
+        min-height: 82px;
+        border-radius: 22px;
+        border: 2px solid rgba(220, 84, 136, 0.15);
+        background: rgba(255,255,255,0.8);
+        color: var(--ink);
+        font-size: 1.05rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .multi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(200px, 1fr));
+        gap: 16px;
+        max-width: 620px;
+        margin: 0 auto;
+      }
+
+      .checkbox-btn {
+        width: 100%;
+        padding: 18px 18px;
+        border-radius: 18px;
+        border: 2px solid rgba(220, 84, 136, 0.2);
+        background: rgba(255,255,255,0.78);
+        color: var(--ink);
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .checkbox-btn.selected {
+        background: linear-gradient(135deg, #f9d6e7, #ffd7b9);
+        border-color: rgba(220, 84, 136, 0.32);
+      }
+
+      .slider-shell {
+        max-width: 620px;
+        margin: 0 auto;
+        padding: 28px 12px 10px;
+      }
+
+      .slider-wrap {
+        position: relative;
+        margin-top: 12px;
+      }
+
+      .slider-wrap input[type="range"] {
+        width: 100%;
+        accent-color: var(--rose);
+        height: 8px;
+      }
+
+      .slider-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .slider-value {
+        display: flex;
+        justify-content: center;
+        margin-top: 18px;
+        font-weight: 800;
+        color: var(--rose-deep);
+        font-size: 1.1rem;
+      }
+
+      .nav-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        margin-top: 30px;
+        max-width: 620px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .nav-btn {
+        min-width: 140px;
+        padding: 16px 22px;
+        border-radius: 999px;
+        border: 2px solid rgba(220, 84, 136, 0.15);
+        background: rgba(255,255,255,0.76);
+        color: var(--ink);
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .nav-btn.primary {
+        background: linear-gradient(135deg, #f478a5, #e85d93);
+        color: white;
+        border-color: transparent;
+      }
+
+      .summary {
+        max-width: 760px;
+        margin: 0 auto;
+        background: rgba(255,255,255,0.54);
+        border: 1px solid rgba(242, 108, 156, 0.2);
+        border-radius: 24px;
+        padding: 20px 18px 24px;
+      }
+
+      .summary h3 {
+        margin: 0 0 20px;
+        text-align: center;
+        font-size: clamp(2rem, 4vw, 2.7rem);
+      }
+
+      .phone-box {
+        display: grid;
+        gap: 10px;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(242, 108, 156, 0.15);
+      }
+
+      .phone-box label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      .phone-box input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1px solid rgba(220, 84, 136, 0.2);
+        border-radius: 14px;
+        background: rgba(255,255,255,0.7);
+        color: var(--ink);
+        font: inherit;
+      }
+
+      .phone-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .send-btn {
+        min-width: 180px;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #f478a5, #e85d93);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .summary-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 12px 14px;
+        background: rgba(255,255,255,0.7);
+        border-radius: 14px;
+        border: 1px solid rgba(242, 108, 156, 0.14);
+      }
+
+      .summary-item span:first-child {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .summary-item strong {
+        text-align: right;
+      }
+
+      @media (max-width: 640px) {
+        .step { padding: 30px 18px 22px; }
+        .tile-grid, .multi-grid { grid-template-columns: 1fr; }
+        .nav-row { flex-direction: column-reverse; }
+        .nav-btn { width: 100%; }
+        .intro-box { height: 210px; }
+        .intro-box .yes-btn { left: 34%; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <section class="step active" id="step-intro">
+        <h1 class="question">tęskniłaś za mną?</h1>
+        <div class="intro-box" aria-label="Pytanie o tęsknotę">
+          <button class="yes-btn" data-next="1" type="button">tak</button>
+          <button class="no-btn" id="noBtn" type="button">nie</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-mood">
+        <h2 class="question">jak się czujemy dzisiaj?</h2>
+        <div class="tile-grid">
+          <button class="tile-btn" type="button" data-group="mood" data-value="SUPER">SUPER</button>
+          <button class="tile-btn" type="button" data-group="mood" data-value="dobrze">dobrze</button>
+          <button class="tile-btn" type="button" data-group="mood" data-value="okay">okay</button>
+          <button class="tile-btn" type="button" data-group="mood" data-value="zmęczona">zmęczona</button>
+          <button class="tile-btn" type="button" data-group="mood" data-value="zestresowana">zestresowana</button>
+          <button class="tile-btn" type="button" data-group="mood" data-value="smutna">smutna</button>
+        </div>
+        <div class="nav-row">
+          <button class="nav-btn" type="button" data-action="back">back</button>
+          <button class="nav-btn primary" type="button" data-action="next">next</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-activity">
+        <h2 class="question">co dzis robiłaś</h2>
+        <div class="multi-grid">
+          <button class="checkbox-btn" type="button" data-group="activity" data-value="pracowałam">pracowałam</button>
+          <button class="checkbox-btn" type="button" data-group="activity" data-value="odpoczywałam dzis">odpoczywałam dzis</button>
+          <button class="checkbox-btn" type="button" data-group="activity" data-value="widzialam sie ze znajomymi">widzialam sie ze znajomymi</button>
+          <button class="checkbox-btn" type="button" data-group="activity" data-value="uczyłam sie">uczyłam sie</button>
+        </div>
+        <div class="nav-row">
+          <button class="nav-btn" type="button" data-action="back">back</button>
+          <button class="nav-btn primary" type="button" data-action="next">next</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-missing">
+        <h2 class="question">jak bardzo tęskniłaś</h2>
+        <div class="slider-shell">
+          <div class="slider-wrap">
+            <input id="missingRange" type="range" min="1" max="10" value="6" />
+            <div class="slider-labels">
+              <span>leciutko</span>
+              <span>bardzo</span>
+            </div>
+            <div class="slider-value" id="missingValue">6/10</div>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="nav-btn" type="button" data-action="back">back</button>
+          <button class="nav-btn primary" type="button" data-action="next">next</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-smile">
+        <h2 class="question">co sprawiło, że się uśmiechnęłaś dzis?</h2>
+        <div class="multi-grid">
+          <button class="checkbox-btn" type="button" data-group="smile" data-value="myslałam o tobie">myslałam o tobie</button>
+          <button class="checkbox-btn" type="button" data-group="smile" data-value="dobre jedzonko">dobre jedzonko</button>
+          <button class="checkbox-btn" type="button" data-group="smile" data-value="słodki zwierzak">słodki zwierzak</button>
+          <button class="checkbox-btn" type="button" data-group="smile" data-value="smieszny meme">smieszny meme</button>
+          <button class="checkbox-btn" type="button" data-group="smile" data-value="nic takiego dzis 🥺">nic takiego dzis 🥺</button>
+        </div>
+        <div class="nav-row">
+          <button class="nav-btn" type="button" data-action="back">back</button>
+          <button class="nav-btn primary" type="button" data-action="next">next</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-eat">
+        <h2 class="question">czy jadłaś dzis porządnie</h2>
+        <div class="multi-grid">
+          <button class="checkbox-btn" type="button" data-group="eat" data-value="TAKK!">TAKK!</button>
+          <button class="checkbox-btn" type="button" data-group="eat" data-value="przeciętnie">przeciętnie</button>
+          <button class="checkbox-btn" type="button" data-group="eat" data-value="fastfoodzik :3">fastfoodzik :3</button>
+          <button class="checkbox-btn" type="button" data-group="eat" data-value="zapomniałam zjeść wystarczająco">zapomniałam zjeść wystarczająco</button>
+        </div>
+        <div class="nav-row">
+          <button class="nav-btn" type="button" data-action="back">back</button>
+          <button class="nav-btn primary" type="button" data-action="next">next</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-battery">
+        <h2 class="question">poziom baterii spolecznej</h2>
+        <div class="slider-shell">
+          <div class="slider-wrap">
+            <input id="batteryRange" type="range" min="1" max="10" value="7" />
+            <div class="slider-labels">
+              <span>🔋 wyczerpana</span>
+              <span>pełna 🔋</span>
+            </div>
+            <div class="slider-value" id="batteryValue">7/10</div>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="nav-btn" type="button" data-action="back">back</button>
+          <button class="nav-btn primary" type="button" data-action="next">next</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-want">
+        <h2 class="question">czego byś chciała ode mnie dzis</h2>
+        <div class="multi-grid">
+          <button class="checkbox-btn" type="button" data-group="want" data-value="DUŻEGO PRZYTULASA">DUŻEGO PRZYTULASA</button>
+          <button class="checkbox-btn" type="button" data-group="want" data-value="Gadanie na kamerkach">Gadanie na kamerkach</button>
+          <button class="checkbox-btn" type="button" data-group="want" data-value="słodka wiadomość">słodka wiadomość</button>
+          <button class="checkbox-btn" type="button" data-group="want" data-value="trochę ciszy">trochę ciszy</button>
+          <button class="checkbox-btn" type="button" data-group="want" data-value="kogoś, żeby mnie wysłuchał">kogoś, żeby mnie wysłuchał</button>
+        </div>
+        <div class="nav-row">
+          <button class="nav-btn" type="button" data-action="back">back</button>
+          <button class="nav-btn primary" type="button" data-action="finish">zakoncz</button>
+        </div>
+      </section>
+
+      <section class="step" id="step-summary">
+        <div class="summary">
+          <h3>raport</h3>
+          <div class="summary-list" id="summaryList"></div>
+
+          <div class="phone-box">
+            <label for="phoneInput">prześlij raport na numer telefonu</label>
+            <input id="phoneInput" type="tel" placeholder="+48 123 456 789" inputmode="tel" />
+            <div class="phone-actions">
+              <button class="send-btn" id="sendReportBtn" type="button">wyślij raport</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const state = {
+        currentStep: 0,
+        answers: {
+          mood: '',
+          activity: [],
+          missing: 6,
+          smile: '',
+          eat: '',
+          battery: 7,
+          want: ''
+        }
+      };
+
+      const steps = [...document.querySelectorAll('.step')];
+      const missingRange = document.getElementById('missingRange');
+      const batteryRange = document.getElementById('batteryRange');
+      const missingValue = document.getElementById('missingValue');
+      const batteryValue = document.getElementById('batteryValue');
+
+      function showStep(index) {
+        state.currentStep = index;
+        steps.forEach((step, i) => {
+          step.classList.toggle('active', i === index);
+        });
+      }
+
+      function updateRangeValue(range, label, valueElement) {
+        const value = +range.value;
+        valueElement.textContent = `${value}/10`;
+        if (range === missingRange) state.answers.missing = value;
+        if (range === batteryRange) state.answers.battery = value;
+      }
+
+      function attachSingleChoice(groupName, sourceSelector) {
+        document.querySelectorAll(sourceSelector).forEach((button) => {
+          button.addEventListener('click', () => {
+            const btns = [...document.querySelectorAll(sourceSelector)];
+            btns.forEach((btn) => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            state.answers[groupName] = button.dataset.value;
+          });
+        });
+      }
+
+      function attachMultiChoice(groupName, sourceSelector) {
+        document.querySelectorAll(sourceSelector).forEach((button) => {
+          button.addEventListener('click', () => {
+            button.classList.toggle('selected');
+            const selected = [...document.querySelectorAll(`${sourceSelector}.selected`)].map(item => item.dataset.value);
+            state.answers[groupName] = selected;
+          });
+        });
+      }
+
+      attachSingleChoice('mood', '.tile-btn[data-group="mood"]');
+      attachMultiChoice('activity', '.checkbox-btn[data-group="activity"]');
+      attachSingleChoice('smile', '.checkbox-btn[data-group="smile"]');
+      attachSingleChoice('eat', '.checkbox-btn[data-group="eat"]');
+      attachSingleChoice('want', '.checkbox-btn[data-group="want"]');
+
+      missingRange.addEventListener('input', () => updateRangeValue(missingRange, 'missing', missingValue));
+      batteryRange.addEventListener('input', () => updateRangeValue(batteryRange, 'battery', batteryValue));
+
+      function buildSummary() {
+        const summaryList = document.getElementById('summaryList');
+        const rows = [
+          ['co dzis robiłaś', Array.isArray(state.answers.activity) && state.answers.activity.length ? state.answers.activity.join(', ') : '—'],
+          ['level tęsknoty', `${state.answers.missing}/10`],
+          ['powód uśmiechu', state.answers.smile || '—'],
+          ['zjadłaś?', state.answers.eat || '—'],
+          ['czego chcesz ode mnie', state.answers.want || '—'],
+          ['poziom baterii spolecznej', `${state.answers.battery}/10`]
+        ];
+
+        summaryList.innerHTML = rows.map(([label, value]) => `
+          <div class="summary-item">
+            <span>${label}</span>
+            <strong>${value}</strong>
+          </div>
+        `).join('');
+
+        const summaryText = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
+        const phoneInput = document.getElementById('phoneInput');
+        phoneInput.dataset.summary = summaryText;
+      }
+
+      function ensureChoiceForStep(index) {
+        if (index === 1 && !state.answers.mood) {
+          alert('Wybierz jedną opcję, zanim przejdziesz dalej.');
+          return false;
+        }
+        if (index === 2 && state.answers.activity.length === 0) {
+          alert('Zaznacz przynajmniej jedną opcję.');
+          return false;
+        }
+        if (index === 4 && !state.answers.smile) {
+          alert('Wybierz powód uśmiechu.');
+          return false;
+        }
+        if (index === 5 && !state.answers.eat) {
+          alert('Wybierz odpowiedź.');
+          return false;
+        }
+        if (index === 7 && !state.answers.want) {
+          alert('Wybierz, czego chcesz dziś ode mnie.');
+          return false;
+        }
+        return true;
+      }
+
+      document.querySelectorAll('[data-action="next"]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const currentIndex = steps.indexOf(document.querySelector('.step.active'));
+          if (!ensureChoiceForStep(currentIndex)) return;
+          const nextIndex = Math.min(currentIndex + 1, steps.length - 1);
+          showStep(nextIndex);
+          if (nextIndex === steps.length - 1) buildSummary();
+        });
+      });
+
+      document.querySelectorAll('[data-action="back"]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const currentIndex = steps.indexOf(document.querySelector('.step.active'));
+          const prevIndex = Math.max(currentIndex - 1, 0);
+          showStep(prevIndex);
+        });
+      });
+
+      document.querySelector('.yes-btn').addEventListener('click', () => {
+        showStep(1);
+      });
+
+      const noBtn = document.getElementById('noBtn');
+      const introBox = document.querySelector('.intro-box');
+
+      function moveNoAway() {
+        const boxRect = introBox.getBoundingClientRect();
+        const noRect = noBtn.getBoundingClientRect();
+        const padding = 18;
+        const maxLeft = Math.max(padding, boxRect.width - noRect.width - padding);
+        const maxTop = Math.max(padding, boxRect.height - noRect.height - padding);
+        const left = Math.random() * maxLeft;
+        const top = Math.random() * maxTop;
+        noBtn.style.left = `${left}px`;
+        noBtn.style.top = `${top}px`;
+        noBtn.style.transform = 'translate(0, 0)';
+      }
+
+      noBtn.addEventListener('mouseenter', moveNoAway);
+      noBtn.addEventListener('mousemove', moveNoAway);
+      noBtn.addEventListener('focus', moveNoAway);
+
+      document.querySelector('[data-action="finish"]').addEventListener('click', () => {
+        if (!ensureChoiceForStep(7)) return;
+        buildSummary();
+        showStep(steps.length - 1);
+      });
+
+      document.getElementById('sendReportBtn').addEventListener('click', () => {
+        const phoneInput = document.getElementById('phoneInput');
+        const phone = (phoneInput.value || '').trim();
+        const summaryText = phoneInput.dataset.summary || 'Raport z quizu';
+
+        if (!phone) {
+          alert('Wpisz numer telefonu, na który chcesz otrzymać raport.');
+          phoneInput.focus();
+          return;
+        }
+
+        const cleanNumber = phone.replace(/\s+/g, '').replace(/-/g, '');
+        const smsLink = `sms:${cleanNumber}?body=${encodeURIComponent(summaryText)}`;
+
+        try {
+          window.location.href = smsLink;
+          setTimeout(() => {
+            alert('Jeśli aplikacja SMS się nie otworzyła, skopiuj poniższy raport i wyślij go ręcznie: \n\n' + summaryText);
+          }, 200);
+        } catch (error) {
+          alert('Nie udało się otworzyć aplikacji SMS. Skopiuj raport ręcznie:\n\n' + summaryText);
+        }
+      });
+
+      updateRangeValue(missingRange, 'missing', missingValue);
+      updateRangeValue(batteryRange, 'battery', batteryValue);
+    </script>
+  </body>
+</html>
