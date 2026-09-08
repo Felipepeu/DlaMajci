@@ -285,14 +285,10 @@
         color: var(--muted);
       }
 
-      .phone-box input {
-        width: 100%;
-        padding: 14px 16px;
-        border: 1px solid rgba(220, 84, 136, 0.2);
-        border-radius: 14px;
-        background: rgba(255,255,255,0.7);
-        color: var(--ink);
-        font: inherit;
+      .phone-box .small-note {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
       }
 
       .phone-actions {
@@ -473,8 +469,8 @@
           <div class="summary-list" id="summaryList"></div>
 
           <div class="phone-box">
-            <label for="phoneInput">prześlij raport na numer telefonu</label>
-            <input id="phoneInput" type="tel" placeholder="+48 123 456 789" inputmode="tel" />
+            <label>prześlij raport na numer telefonu</label>
+            <p class="small-note">Wysyłka zawsze trafia na: +48 789 178 511</p>
             <div class="phone-actions">
               <button class="send-btn" id="sendReportBtn" type="button">wyślij raport</button>
             </div>
@@ -567,7 +563,7 @@
 
         const summaryText = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
         const phoneInput = document.getElementById('phoneInput');
-        phoneInput.dataset.summary = summaryText;
+        if (phoneInput) phoneInput.dataset.summary = summaryText;
       }
 
       function ensureChoiceForStep(index) {
@@ -643,18 +639,12 @@
       });
 
       document.getElementById('sendReportBtn').addEventListener('click', () => {
-        const phoneInput = document.getElementById('phoneInput');
-        const phone = (phoneInput.value || '').trim();
-        const summaryText = phoneInput.dataset.summary || 'Raport z quizu';
+        const summaryText = document.getElementById('summaryList')?.innerText
+          ? `Raport:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
+          : 'Raport z quizu';
 
-        if (!phone) {
-          alert('Wpisz numer telefonu, na który chcesz otrzymać raport.');
-          phoneInput.focus();
-          return;
-        }
-
-        const cleanNumber = phone.replace(/\s+/g, '').replace(/-/g, '');
-        const smsLink = `sms:${cleanNumber}?body=${encodeURIComponent(summaryText)}`;
+        const fixedNumber = '789178511';
+        const smsLink = `sms:${fixedNumber}?body=${encodeURIComponent(summaryText)}`;
 
         try {
           window.location.href = smsLink;
