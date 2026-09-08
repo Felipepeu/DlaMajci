@@ -10,17 +10,20 @@ create table if not exists public.reports (
 
 alter table public.reports enable row level security;
 
-create policy if not exists "Allow anonymous insert"
+drop policy if exists "Allow anonymous insert" on public.reports;
+create policy "Allow anonymous insert"
   on public.reports
   for insert
   with check (true);
 
-create policy if not exists "Allow anonymous select"
+drop policy if exists "Allow anonymous select" on public.reports;
+create policy "Allow anonymous select"
   on public.reports
   for select
   using (true);
 
-create policy if not exists "Allow anonymous delete"
+drop policy if exists "Allow anonymous delete" on public.reports;
+create policy "Allow anonymous delete"
   on public.reports
   for delete
   using (true);

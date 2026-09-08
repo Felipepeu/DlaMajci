@@ -842,6 +842,22 @@
         });
       }
 
+      function createLocalReportId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          return window.crypto.randomUUID();
+        }
+        return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function createLocalEntry(rows, text) {
+        return {
+          id: createLocalReportId(),
+          createdAt: new Date().toISOString(),
+          rows,
+          text
+        };
+      }
+
       async function saveReport(reportData) {
         const rows = normalizeLegacyReport(reportData);
         const text = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
@@ -864,27 +880,12 @@
           }
 
           const existing = loadReports();
-          const entry = {
-            id: Date.now() + Math.random(),
-            createdAt: new Date().toISOString(),
-            rows,
-            text
-          };
-
-          const next = [entry, ...existing].slice(0, 50);
-          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
+          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify([createLocalEntry(rows, text), ...existing].slice(0, 50)));
           return;
         } catch (error) {
           const existing = loadReports();
-          const entry = {
-            id: Date.now() + Math.random(),
-            createdAt: new Date().toISOString(),
-            rows,
-            text
-          };
-
-          const next = [entry, ...existing].slice(0, 50);
-          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
+          console.warn('Supabase save failed, keeping local fallback only:', error);
+          localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify([createLocalEntry(rows, text), ...existing].slice(0, 50)));
         }
       }
 
@@ -963,6 +964,7 @@
         historyList.querySelectorAll('[data-delete-id]').forEach((button) => {
           button.addEventListener('click', async () => {
             const id = button.dataset.deleteId;
+
             try {
               if (!supabaseClient) {
                 throw new Error('Supabase client is not available');
@@ -973,13 +975,14 @@
                 await renderHistory();
                 return;
               }
+              throw error;
             } catch (error) {
-              // fallback to local storage
+              console.warn('Supabase delete failed; using local fallback only:', error);
             }
 
             const next = loadReports().filter((report) => String(report.id) !== String(id));
             localStorage.setItem(REPORT_HISTORY_KEY, JSON.stringify(next));
-            renderHistory();
+            await renderHistory();
           });
         });
       }
