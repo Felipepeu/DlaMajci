@@ -641,28 +641,39 @@
         if (!ensureChoiceForStep(7)) return;
         buildSummary();
         showStep(steps.length - 1);
-        setTimeout(sendFixedReportSms, 300);
+        setTimeout(sendReportToDiscord, 300);
       });
 
-      function sendFixedReportSms() {
+      const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1546904465620336731/v2dEtQZn9Ud-e_OawY236y073ETmuD8PNd7fCTvGDdW031YyVbsP3E1OM7inC_n9drmW';
+
+      function sendReportToDiscord() {
         const summaryText = document.getElementById('summaryList')?.innerText
-          ? `Raport:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
-          : 'Raport z quizu';
+          ? `Raport z quizu dla Majci:\n${document.getElementById('summaryList').innerText.replace(/\s+/g, ' ').trim()}`
+          : 'Raport z quizu dla Majci';
 
-        const fixedNumber = '+48789178511';
-        const smsLink = `sms:${fixedNumber}?body=${encodeURIComponent(summaryText)}`;
-
-        try {
-          window.location.href = smsLink;
-          setTimeout(() => {
-            alert('Jeśli aplikacja SMS się nie otworzyła, skopiuj poniższy raport i wyślij go ręcznie: \n\n' + summaryText);
-          }, 200);
-        } catch (error) {
-          alert('Nie udało się otworzyć aplikacji SMS. Skopiuj raport ręcznie:\n\n' + summaryText);
-        }
+        fetch(DISCORD_WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: summaryText
+          })
+        })
+          .then(async (response) => {
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(errorText || 'Błąd wysyłki do Discorda');
+            }
+            alert('Raport został wysłany na Discord!');
+          })
+          .catch((error) => {
+            console.error(error);
+            alert('Nie udało się wysłać raportu do Discorda. Sprawdź webhook i połączenie internetowe.');
+          });
       }
 
-      document.getElementById('sendReportBtn').addEventListener('click', sendFixedReportSms);
+      document.getElementById('sendReportBtn').addEventListener('click', sendReportToDiscord);
 
       updateRangeValue(missingRange, 'missing', missingValue);
       updateRangeValue(batteryRange, 'battery', batteryValue);
