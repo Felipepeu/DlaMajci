@@ -648,8 +648,7 @@
         `).join('');
 
         const summaryText = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
-        const phoneInput = document.getElementById('phoneInput');
-        phoneInput.dataset.summary = summaryText;
+        // summary text is stored in report history only
       }
 
       function ensureChoiceForStep(index) {
